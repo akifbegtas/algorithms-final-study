@@ -1254,6 +1254,11 @@ queue; çevrim tespiti `result.size() != V`; O(V+E). Verilen graf için in-degre
 ]
 })
 
+# --- L1-L5 düzeltmesi: yanlış yüklenen eski L1-L5 yerine doğru içerik ---
+import content_new_l1l5
+LECTURES = content_new_l1l5.NEW + LECTURES[5:]   # yeni L1-L5 + mevcut L6-L13
+
 print("ALL lectures loaded:", len(LECTURES))
+print("Sira:", [l["code"] + ":" + l["title"][:22] for l in LECTURES])
 
 

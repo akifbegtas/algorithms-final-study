@@ -1,17 +1,11 @@
-# Python
 __pycache__/
 *.pyc
 .venv/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
 .idea/
-
-# Geçici / kaynak slaytlar (repoya dahil edilmez)
 extracted/
+exam_imgs/
 *.pptx
 *.pdf

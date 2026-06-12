@@ -4,211 +4,245 @@
 CLASSIC = []
 
 CLASSIC.append({
-"topic":"L3 · Recursion — Factorial",
+"topic":"L1 · OMNeT++ — TicToc temel modül",
 "prompt": r"""
-Aşağıdaki özyinelemeli `factorial` fonksiyonundaki boşlukları doldurun.
+Temel TicToc modülündeki boşlukları doldurun.
 
 ```cpp
-int factorial(int n) {
-    if (n <= 1)
-        return ____;                 // (1) base case dönüş değeri
-    return n * factorial(____);      // (2) özyinelemeli çağrı argümanı
+void Txc1::initialize() {
+    if (strcmp("tic", getName()) == 0) {     // sadece tic başlatır
+        cMessage *msg = new cMessage("tictocMsg");
+        ____(msg, "out");                     // (1) mesajı kapıdan yollayan fonksiyon
+    }
+}
+void Txc1::handleMessage(cMessage *msg) {
+    send(msg, ____);                          // (2) hangi kapıdan geri gönderilir?
 }
 ```
 """,
 "answer": r"""
-**(1) → `1`**  ·  **(2) → `n - 1`**
+**(1) → `send`**  ·  **(2) → `"out"`**
 
 ```cpp
-int factorial(int n) {
-    if (n <= 1)
-        return 1;                    // base case: 0! = 1! = 1
-    return n * factorial(n - 1);     // n! = n * (n-1)!
+void Txc1::initialize() {
+    if (strcmp("tic", getName()) == 0) {
+        cMessage *msg = new cMessage("tictocMsg");
+        send(msg, "out");          // mesajı 'out' kapısından gönder
+    }
+}
+void Txc1::handleMessage(cMessage *msg) {
+    send(msg, "out");              // gelen mesajı geri yolla (ping-pong)
 }
 ```
-Base case olmadan (veya argüman küçülmezse) sonsuz özyineleme olur. `n` her çağrıda 1 azalarak base case'e ilerler.
+`initialize()` sadece bir kez (başta) çalışır ve yalnızca `tic` ilk mesajı üretir. `handleMessage()` her mesaj gelişinde çağrılır ve mesajı geri gönderir.
 """
 })
 
 CLASSIC.append({
-"topic":"L3 · Recursion — Euclid GCD",
+"topic":"L2 · OMNeT++ — State variable (counter)",
 "prompt": r"""
-Euclid'in en büyük ortak bölen (GCD) fonksiyonunu tamamlayın.
+Sayaç (counter) ile simülasyonu durduran kodu tamamlayın.
 
 ```cpp
-int gcd(int u, int v) {
-    if (____)                        // (1) base case koşulu
-        return u;
-    return gcd(v, ____);             // (2) ikinci argüman
+void Txc::initialize() {
+    counter = ____;                  // (1) başlangıç değeri
+    WATCH(counter);
+    if (strcmp("tic", getName()) == 0)
+        scheduleAt(0.0, new cMessage("tictocMsg"));
+}
+void Txc::handleMessage(cMessage *msg) {
+    counter____;                      // (2) her mesajda azalt
+    if (counter == 0)
+        ____ msg;                     // (3) mesajı yok et -> akış dursun
+    else
+        send(msg, "out");
 }
 ```
 """,
 "answer": r"""
-**(1) → `v == 0`**  ·  **(2) → `u % v`**
+**(1) → `10`**  ·  **(2) → `--`**  ·  **(3) → `delete`**
 
 ```cpp
-int gcd(int u, int v) {
-    if (v == 0)
-        return u;                    // bölen 0 ise sonuç u
-    return gcd(v, u % v);            // gcd(u,v) = gcd(v, u mod v)
-}
+counter = 10;        // initialize()'da başlangıç
+...
+counter--;           // her mesaj gelişinde azalt
+if (counter == 0)
+    delete msg;      // mesajı sil -> yeni olay üretilmez -> simülasyon durur
+else
+    send(msg, "out");
 ```
-Her adımda ikinci argüman `u % v` ile küçülür ve eninde sonunda `v == 0` base case'ine ulaşılır.
+`WATCH(counter)` counter'ı GUI'de izlenebilir yapar. Mesaj silinmezse ping-pong sonsuza dek sürer.
 """
 })
 
 CLASSIC.append({
-"topic":"L3/L5 · Selection Sort",
+"topic":"L2 · OMNeT++ — Processing delay (self-message)",
 "prompt": r"""
-Selection Sort'taki eksik satırları doldurun (artan sıralama).
+İşlem gecikmesini self-message ile modelleyen kodu tamamlayın.
 
 ```cpp
-void selectionSort(int A[], int n) {
-    for (int i = 0; i < n - 1; i++) {
-        int small = i;
-        for (int j = ____; j < n; j++)     // (1) iç döngü başlangıcı
-            if (A[j] ____ A[small])         // (2) karşılaştırma operatörü
-                small = j;
-        int temp = A[small];                // swap A[i] <-> A[small]
-        A[small] = A[i];
-        A[i] = ____;                         // (3)
+void Txc::handleMessage(cMessage *msg) {
+    if (msg ____ event) {                       // (1) gelen self-message mi?
+        send(message, "out");                   // bekleyen mesajı gönder
+    } else {
+        message = msg;                          // gelen mesajı sakla
+        ____(simTime() + delayTime, event);     // (2) gecikme sonrası planla
     }
 }
 ```
 """,
 "answer": r"""
-**(1) → `i + 1`**  ·  **(2) → `<`**  ·  **(3) → `temp`**
+**(1) → `==`**  ·  **(2) → `scheduleAt`**
 
 ```cpp
-for (int j = i + 1; j < n; j++)   // i'den sonrasında en küçüğü ara
-    if (A[j] < A[small])           // daha küçük bulundu
-        small = j;
-int temp = A[small];
-A[small] = A[i];
-A[i] = temp;                       // takas tamamlandı
-```
-İç döngü `i+1`'den başlar çünkü `A[i]` zaten aday (small=i) olarak alınmıştır. `<` operatörü artan sıralama verir.
-"""
-})
-
-CLASSIC.append({
-"topic":"L5 · Bubble Sort",
-"prompt": r"""
-Bubble Sort'un iç döngüsünü ve takas koşulunu tamamlayın.
-
-```cpp
-void bubbleSort(int A[], int n) {
-    for (int i = 0; i < n - 1; i++)
-        for (int j = 0; j < ____; j++)     // (1) iç döngü sınırı
-            if (A[j] ____ A[j + 1]) {        // (2) komşu karşılaştırma
-                int t = A[j];
-                A[j] = A[j + 1];
-                A[j + 1] = ____;             // (3)
-            }
+if (msg == event) {                       // self-message (timer) ateşlendi
+    send(message, "out");                 // bekleyen mesajı şimdi gönder
+} else {
+    message = msg;
+    scheduleAt(simTime() + delayTime, event);   // delayTime kadar gecikme planla
 }
 ```
-""",
-"answer": r"""
-**(1) → `n - 1 - i`**  ·  **(2) → `>`**  ·  **(3) → `t`**
-
-```cpp
-for (int j = 0; j < n - 1 - i; j++)   // her turda son i eleman yerine oturmuştur
-    if (A[j] > A[j + 1]) {              // komşular ters sırada
-        int t = A[j];
-        A[j] = A[j + 1];
-        A[j + 1] = t;                  // swap
-    }
-```
-`n-1-i` sınırı, her dış turda en büyük elemanın sona oturduğunu ve tekrar kontrol edilmesine gerek olmadığını kullanır.
+`scheduleAt` modülün **kendine** gelecekteki bir an için mesaj planlar (self-message). Böylece mesaj hemen değil, `delayTime` gecikmeyle işlenir. Timer `cancelEvent(event)` ile iptal edilebilir.
 """
 })
 
 CLASSIC.append({
-"topic":"L5 · Insertion Sort",
+"topic":"L3 · OMNeT++ — check_and_cast + yönlendirme",
 "prompt": r"""
-Insertion Sort'taki kaydırma (shift) mantığını tamamlayın.
+Çok düğümlü ağda mesaj yönlendiren kodu tamamlayın.
 
 ```cpp
-void insertionSort(int A[], int n) {
-    for (int i = 1; i < n; i++) {
-        int key = A[i];
-        int j = i - 1;
-        while (j >= 0 && A[j] > ____) {   // (1) karşılaştırılan değer
-            A[j + 1] = A[j];               // büyük elemanı sağa kaydır
-            j____;                          // (2) j güncelleme
-        }
-        A[____] = key;                      // (3) key'in yerleştirileceği index
+void Txc::handleMessage(cMessage *msg) {
+    TicTocMsg *ttmsg = ____<TicTocMsg *>(msg);     // (1) güvenli tür dönüşümü
+    if (ttmsg->getDestination() == getIndex()) {
+        EV << "Mesaj hedefe ulasti.\n";
+        delete ttmsg;
+    } else {
+        int n = gateSize("gate");
+        int k = ____(0, n - 1);                    // (2) rastgele komşu kapı seç
+        send(ttmsg, "gate$o", k);                   // ilet (forward)
     }
 }
 ```
 """,
 "answer": r"""
-**(1) → `key`**  ·  **(2) → `--`**  ·  **(3) → `j + 1`**
+**(1) → `check_and_cast`**  ·  **(2) → `intuniform`**
 
 ```cpp
-while (j >= 0 && A[j] > key) {   // key'den büyük olanları
-    A[j + 1] = A[j];             // bir sağa kaydır
-    j--;                         // sola ilerle
-}
-A[j + 1] = key;                  // key boşalan doğru yere oturur
+TicTocMsg *ttmsg = check_and_cast<TicTocMsg *>(msg);   // tür yanlışsa hata fırlatır
+...
+int k = intuniform(0, n - 1);    // 0..n-1 arası rastgele tamsayı (kapı index'i)
+send(ttmsg, "gate$o", k);        // mesajı seçilen kapıdan ilet
 ```
-Döngü `key`'den büyük tüm elemanları sağa kaydırır; durduğunda `j+1` indexi key için doğru (sıralı) konumdur.
+`check_and_cast`, başarısız dönüşümde sessizce `nullptr` vermek yerine **açık hata** fırlatır. `intuniform(a,b)` OMNeT++'ın rastgele tamsayı üretecidir; mesaj hedefe ulaşana dek rastgele komşuya iletilir.
 """
 })
 
 CLASSIC.append({
-"topic":"L2 · Linked List — Başa Ekleme",
+"topic":"L4 · Greedy — Genel yapı (sözde kod)",
 "prompt": r"""
-Bağlı listenin başına node ekleyen fonksiyonu tamamlayın.
+Greedy method'un genel iskeletini tamamlayın.
 
-```cpp
-void addFirst(Node*& head, int deger) {
-    Node* yeni = new Node();
-    yeni->data = deger;
-    yeni->next = ____;        // (1) yeni node neyi göstermeli?
-    head = ____;              // (2) head ne olmalı?
-}
+```text
+Greedy(C):                       // C = aday kümesi
+    S = ____                     // (1) başlangıç çözümü
+    while C boş değil:
+        x = Select(C)            // locally optimal adayı seç
+        C = C - {x}
+        if ____(S ∪ {x}):        // (2) ekleyince kısıt sağlanıyor mu?
+            S = S ∪ {x}
+    return S
 ```
 """,
 "answer": r"""
-**(1) → `head`**  ·  **(2) → `yeni`**
+**(1) → `∅` (boş küme)**  ·  **(2) → `Feasible` (uygunluk kontrolü)**
 
-```cpp
-yeni->next = head;   // önce: yeni node eski başı gösterir
-head = yeni;          // sonra: head yeni node'a taşınır
+```text
+S = ∅                          // çözüm boş başlar
+while C boş değil:
+    x = Select(C)              // her adımda yerel en iyi aday
+    C = C - {x}
+    if Feasible(S ∪ {x}):      // adayı eklemek kısıtı bozmuyorsa
+        S = S ∪ {x}            // çözüme ekle
+return S
 ```
-**Sıra kritiktir.** Önce `head = yeni` yapılırsa eski listeye olan tek bağlantı kaybolur (memory leak). Bu işlem O(1)'dir.
+Greedy her adımda **locally optimal** seçim yapar; yalnızca **feasible (uygun)** adaylar çözüme eklenir. Bu yerel seçimlerin global optimuma götürmesi **garanti değildir** (örn. 0/1 Knapsack'te başarısız olur).
 """
 })
 
 CLASSIC.append({
-"topic":"L2 · Linked List — Arama",
+"topic":"L5 · Big O — Sadeleştirme",
 "prompt": r"""
-Bağlı listede değer arayan fonksiyonu tamamlayın.
+Aşağıdaki ifadeleri Big O kurallarıyla sadeleştirin.
 
-```cpp
-bool search(Node* head, int aranan) {
-    Node* p = head;
-    while (p != ____) {            // (1) döngü koşulu
-        if (p->data == aranan)
-            return true;
-        p = ____;                  // (2) ilerleme
-    }
-    return false;
-}
+```text
+(1) O(2n + 3)        = ____
+(2) O(n² + n)         = ____
+(3) O(3n³ + 100n²)    = ____
 ```
+Kural: sabitleri at, en yüksek dereceli terimi tut.
 """,
 "answer": r"""
-**(1) → `NULL`**  ·  **(2) → `p->next`**
+**(1) → `O(n)`**  ·  **(2) → `O(n²)`**  ·  **(3) → `O(n³)`**
+
+```text
+O(2n + 3)       -> O(n)     // 2 katsayısı ve +3 sabiti atılır
+O(n² + n)       -> O(n²)    // en yüksek dereceli terim kalır
+O(3n³ + 100n²)  -> O(n³)    // 3 katsayısı atılır, en yüksek derece n³
+```
+İki temel kural: **(a) sabit katsayılar/toplananlar atılır**, **(b) yalnızca en yüksek dereceli terim tutulur**. n büyüdükçe baskın terim sonucu belirler.
+"""
+})
+
+CLASSIC.append({
+"topic":"L5 · Big O — Kod parçasının karmaşıklığı",
+"prompt": r"""
+Aşağıdaki kodun toplam Big O karmaşıklığını belirleyin (boşlukları doldurun).
 
 ```cpp
-while (p != NULL) {       // liste sonuna kadar
-    if (p->data == aranan) return true;
-    p = p->next;          // bir sonraki node'a geç
-}
-return false;
+for (int i = 0; i < n; i++)        // ____ kez   (A)
+    for (int j = 0; j < n; j++)    // her i için ____ kez   (B)
+        x++;                       // alt toplam: ____   (C)
+
+for (int k = 0; k < n; k++)        // + ____ kez   (D)
+    y++;
 ```
-Liste baştan sona gezilir (traverse). En kötü durumda tüm liste taranır → **O(n)**. Linked list'te rastgele erişim olmadığı için ikili arama yapılamaz.
+Toplam Big O = ?
+""",
+"answer": r"""
+**(A) → n**  ·  **(B) → n**  ·  **(C) → n²**  ·  **(D) → n**
+
+İlk blok iç içe iki döngü: `n × n = n²`. İkinci blok ayrı tek döngü: `n`. Toplam `T(n) ≈ n² + n`.
+
+```text
+n² + n   --(en yüksek dereceli terim)-->   O(n²)
+```
+**Toplam Big O = O(n²)**. İç içe döngülerde karmaşıklıklar **çarpılır** (n²), peş peşe bloklarda **toplanır** (n²+n), ama Big O'da en büyük terim baskındır.
+"""
+})
+
+# ===================== L6-L13 (değişmeden korunan klasik sorular) =====================
+
+CLASSIC.append({
+"topic":"L6 · T(n) Analizi",
+"prompt": r"""
+Aşağıdaki kod parçasının T(n) ve Big-O karmaşıklığını belirleyin (boşlukları doldurun).
+
+```cpp
+int sum = 0;                       // 1 kez
+for (int i = 0; i < n; i++)        // ____ kez   (A)
+    for (int j = 0; j < n; j++)    // her i için ____ kez   (B)
+        sum++;                     // toplam: ____   (C)
+```
+T(n) ≈ ?  →  Big-O = ?
+""",
+"answer": r"""
+**(A) → n**  ·  **(B) → n**  ·  **(C) → n × n = n²**
+
+`sum++` toplam `n²` kez çalışır (dış döngü n, iç döngü her seferinde n). Sabit başlangıç işlemiyle birlikte:
+**T(n) ≈ n² + 1  →  Big-O = O(n²)** (karesel).
+
+İç içe döngülerde karmaşıklıklar **çarpılır**. Eğer iç döngü `j < i` olsaydı toplam `Σi = n(n-1)/2` olur ama yine **O(n²)** kalırdı.
 """
 })
 
@@ -383,29 +417,6 @@ while (!q.empty()) {
 }
 ```
 `--indeg[v]` komşunun in-degree'sini önce azaltır, 0 olduysa (tüm bağımlılıkları bitti) kuyruğa ekler. Sonda `result.size() != V` ise **çevrim** vardır. Karmaşıklık **O(V+E)**.
-"""
-})
-
-CLASSIC.append({
-"topic":"L6 · T(n) Analizi",
-"prompt": r"""
-Aşağıdaki kod parçasının T(n) ve Big-O karmaşıklığını belirleyin (boşlukları doldurun).
-
-```cpp
-int sum = 0;                       // 1 kez
-for (int i = 0; i < n; i++)        // ____ kez   (A)
-    for (int j = 0; j < n; j++)    // her i için ____ kez   (B)
-        sum++;                     // toplam: ____   (C)
-```
-T(n) ≈ ?  →  Big-O = ?
-""",
-"answer": r"""
-**(A) → n**  ·  **(B) → n**  ·  **(C) → n × n = n²**
-
-`sum++` toplam `n²` kez çalışır (dış döngü n, iç döngü her seferinde n). Sabit başlangıç işlemleriyle birlikte:
-**T(n) ≈ n² + 1  →  Big-O = O(n²)** (karesel).
-
-İç içe döngülerde karmaşıklıklar **çarpılır**. Eğer iç döngü `j < i` olsaydı toplam `Σi = n(n-1)/2` olur ama yine **O(n²)** kalırdı.
 """
 })
 

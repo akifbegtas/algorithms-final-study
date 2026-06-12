@@ -10,6 +10,7 @@ import re
 import content_lectures
 import content_mcq
 import content_classic
+import content_exams
 
 # ----------------------------------------------------------------------------
 # Mini markdown -> HTML renderer
@@ -91,13 +92,38 @@ def md(text):
                        % (kind, label, inner))
             continue
 
+        # table:  | a | b |   followed by a separator line  |---|---|
+        if (stripped.startswith("|") and i + 1 < n
+                and re.match(r'^\|?[\s:|-]+\|?$', lines[i + 1].strip())
+                and '-' in lines[i + 1]):
+            flush_para()
+            header = [c.strip() for c in stripped.strip().strip('|').split('|')]
+            i += 2  # skip header + separator
+            rows = []
+            while i < n and lines[i].strip().startswith("|"):
+                rows.append([c.strip() for c in lines[i].strip().strip('|').split('|')])
+                i += 1
+            th = "".join("<th>%s</th>" % _inline(h) for h in header)
+            tb = "".join("<tr>%s</tr>" % "".join("<td>%s</td>" % _inline(c) for c in r)
+                         for r in rows)
+            out.append('<div class="tablewrap"><table><thead><tr>%s</tr></thead>'
+                       '<tbody>%s</tbody></table></div>' % (th, tb))
+            continue
+
         if stripped.startswith("- "):
             flush_para()
-            items = []
-            while i < n and lines[i].strip().startswith("- "):
-                items.append("<li>%s</li>" % _inline(lines[i].strip()[2:]))
-                i += 1
-            out.append("<ul>%s</ul>" % "".join(items))
+            raw = []
+            while i < n:
+                ls = lines[i].strip()
+                if ls.startswith("- "):
+                    raw.append(ls[2:])
+                    i += 1
+                elif raw and ls and not re.match(r'^(```|#{2,3}\s|:::|\||-\s|\d+\.\s)', ls):
+                    raw[-1] += " " + ls   # wrapped continuation line
+                    i += 1
+                else:
+                    break
+            out.append("<ul>%s</ul>" % "".join("<li>%s</li>" % _inline(it) for it in raw))
             continue
 
         if re.match(r"^\d+\.\s", stripped):
@@ -167,46 +193,52 @@ def render_lecture(lec, idx):
 """
 
 
-def render_mcq(questions):
-    data = json.dumps(questions, ensure_ascii=False)
+def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro=""):
+    data = json.dumps([{"correct": q["correct"]} for q in questions], ensure_ascii=False)
     cards = []
     for i, q in enumerate(questions):
+        opts_list = q.get("options") or q.get("opts")
+        exp = q.get("explain") or q.get("exp", "")
+        topic = q.get("topic", "")
+        topic_html = f'<span class="mcq-topic">{_inline(topic)}</span>' if topic else ''
         opts = "".join(
-            f'<label class="opt" data-i="{i}" data-o="{k}">'
-            f'<input type="radio" name="q{i}" value="{k}">'
+            f'<label class="opt" data-o="{k}">'
+            f'<input type="radio" name="{qid}_q{i}" value="{k}">'
             f'<span class="opt-key">{chr(65+k)}</span>'
             f'<span class="opt-txt">{_inline(o)}</span></label>'
-            for k, o in enumerate(q["options"])
+            for k, o in enumerate(opts_list)
         )
         cards.append(
-            f'<div class="mcq" id="mcq{i}"><div class="mcq-q">'
-            f'<span class="mcq-n">{i+1}</span>'
-            f'<span class="mcq-topic">{q.get("topic","")}</span>'
+            f'<div class="mcq" id="{qid}_mcq{i}"><div class="mcq-q">'
+            f'<span class="mcq-n">{i+1}</span>{topic_html}'
             f'<div class="mcq-text">{_inline(q["q"])}</div></div>'
             f'<div class="opts">{opts}</div>'
-            f'<div class="explain" id="exp{i}"><strong>Açıklama:</strong> {_inline(q["explain"])}</div>'
+            f'<div class="explain" id="{qid}_exp{i}"><strong>Cevap &amp; Açıklama:</strong> {_inline(exp)}</div>'
             f'</div>'
         )
     cards_html = "\n".join(cards)
+    intro_html = (f'<div class="callout note"><span class="callout-label">Bilgi</span>'
+                  f'<p>{_inline(intro)}</p></div>') if intro else ''
     return f"""
-<section id="test" class="quiz-section" data-section="test">
+<section id="{qid}" class="quiz-section" data-section="quiz">
   <div class="lec-head">
-    <span class="lec-chip alt">TEST</span>
-    <div><h2>Çoktan Seçmeli Sınav</h2>
-    <p class="lec-sub">30 soru · tüm konular · otomatik puanlama</p></div>
+    <span class="lec-chip {chip_cls}">{chip}</span>
+    <div><h2>{_inline(title)}</h2>
+    <p class="lec-sub">{_inline(subtitle)}</p></div>
   </div>
+  {intro_html}
   <div class="quiz-toolbar">
-    <button class="btn primary" onclick="gradeQuiz()">Sınavı Bitir &amp; Puanla</button>
-    <button class="btn ghost" onclick="resetQuiz()">Sıfırla</button>
-    <div class="score" id="score"></div>
+    <button class="btn primary" onclick="gradeQuiz('{qid}')">Bitir &amp; Puanla</button>
+    <button class="btn ghost" onclick="resetQuiz('{qid}')">Sıfırla</button>
+    <div class="score" id="{qid}_score"></div>
   </div>
-  <div id="quiz">{cards_html}</div>
+  <div>{cards_html}</div>
   <div class="quiz-toolbar bottom">
-    <button class="btn primary" onclick="gradeQuiz()">Sınavı Bitir &amp; Puanla</button>
-    <div class="score" id="score2"></div>
+    <button class="btn primary" onclick="gradeQuiz('{qid}')">Bitir &amp; Puanla</button>
+    <div class="score" id="{qid}_score2"></div>
   </div>
 </section>
-<script>window.QUIZ_DATA = {data};</script>
+<script>window.QUIZZES=window.QUIZZES||{{}};window.QUIZZES["{qid}"]={data};</script>
 """
 
 
@@ -301,6 +333,7 @@ section{margin-top:30px;background:linear-gradient(180deg,var(--panel),var(--pan
   padding:7px 12px;border-radius:11px;box-shadow:var(--shadow)}
 .lec-chip.alt{background:linear-gradient(135deg,#37d399,#1eb980)}
 .lec-chip.alt2{background:linear-gradient(135deg,#ffcf6b,#ff9f43);color:#3a2a00}
+.lec-chip.alt3{background:linear-gradient(135deg,#ff6b81,#d6336c)}
 .lec-head h2{margin:0;font-size:22px}
 .lec-sub{color:var(--muted);margin:3px 0 0;font-size:14px}
 .lec-body{margin-top:14px}
@@ -337,6 +370,17 @@ pre.code::-webkit-scrollbar{height:8px}pre.code::-webkit-scrollbar-thumb{backgro
 .callout.tip{border-left:4px solid var(--good)} .callout.tip .callout-label{background:rgba(55,211,153,.18);color:var(--good)}
 .callout.warn{border-left:4px solid var(--bad)} .callout.warn .callout-label{background:rgba(255,107,129,.18);color:var(--bad)}
 .callout.exam{border-left:4px solid var(--warn)} .callout.exam .callout-label{background:rgba(255,207,107,.2);color:var(--warn)}
+
+/* tables */
+.tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+thead th{background:var(--chip);color:var(--ink);text-align:left;padding:10px 13px;font-weight:700;
+  border-bottom:2px solid var(--line);white-space:nowrap}
+tbody td{padding:9px 13px;border-bottom:1px solid var(--line);color:#d4ddff;vertical-align:top}
+[data-theme="light"] tbody td{color:#28335a}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:rgba(255,255,255,.02)}
+table code{white-space:nowrap}
 
 /* Q&A */
 .qa-wrap{margin-top:22px;border-top:1px dashed var(--line);padding-top:16px}
@@ -428,42 +472,37 @@ function copyCode(btn){
     });
   }catch(e){}
 }
-function gradeQuiz(){
-  var data = window.QUIZ_DATA||[]; var correct=0, answered=0;
+function gradeQuiz(id){
+  var data=(window.QUIZZES&&window.QUIZZES[id])||[]; var correct=0, answered=0;
   for(var i=0;i<data.length;i++){
-    var picked=document.querySelector('input[name="q'+i+'"]:checked');
-    var opts=document.querySelectorAll('#mcq'+i+' .opt');
+    var picked=document.querySelector('input[name="'+id+'_q'+i+'"]:checked');
+    var opts=document.querySelectorAll('#'+id+'_mcq'+i+' .opt');
     opts.forEach(function(o){o.classList.remove('correct','wrong');});
     var ci=data[i].correct;
-    opts.forEach(function(o){
-      var oi=parseInt(o.getAttribute('data-o'));
-      if(oi===ci) o.classList.add('correct');
-    });
+    opts.forEach(function(o){ if(parseInt(o.getAttribute('data-o'))===ci) o.classList.add('correct'); });
     if(picked){
       answered++;
       var pi=parseInt(picked.value);
       if(pi===ci) correct++;
-      else { var w=document.querySelector('#mcq'+i+' .opt[data-o="'+pi+'"]'); if(w)w.classList.add('wrong'); }
+      else { var w=document.querySelector('#'+id+'_mcq'+i+' .opt[data-o="'+pi+'"]'); if(w)w.classList.add('wrong'); }
     }
-    var ex=document.getElementById('exp'+i); if(ex)ex.classList.add('show');
+    var ex=document.getElementById(id+'_exp'+i); if(ex)ex.classList.add('show');
   }
-  var pct=Math.round(correct/data.length*100);
-  var msg='Skor: '+correct+' / '+data.length+'  ('+pct+'%)  ·  '+answered+' soru işaretlendi';
-  var s1=document.getElementById('score'), s2=document.getElementById('score2');
-  if(s1){s1.textContent=msg; s1.style.color = pct>=70?'var(--good)':(pct>=50?'var(--warn)':'var(--bad)');}
-  if(s2){s2.textContent=msg; s2.style.color = s1?s1.style.color:'';}
-  var first=document.getElementById('mcq0'); if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
+  var pct=data.length?Math.round(correct/data.length*100):0;
+  var msg='Skor: '+correct+' / '+data.length+'  ('+pct+'%)  ·  '+answered+' işaretlendi';
+  ['','2'].forEach(function(sx){var el=document.getElementById(id+'_score'+sx);
+    if(el){el.textContent=msg; el.style.color=pct>=70?'var(--good)':(pct>=50?'var(--warn)':'var(--bad)');}});
+  var first=document.getElementById(id+'_mcq0'); if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function resetQuiz(){
-  var data=window.QUIZ_DATA||[];
+function resetQuiz(id){
+  var data=(window.QUIZZES&&window.QUIZZES[id])||[];
   for(var i=0;i<data.length;i++){
-    document.querySelectorAll('input[name="q'+i+'"]').forEach(function(r){r.checked=false;});
-    document.querySelectorAll('#mcq'+i+' .opt').forEach(function(o){o.classList.remove('correct','wrong');});
-    var ex=document.getElementById('exp'+i); if(ex)ex.classList.remove('show');
+    document.querySelectorAll('input[name="'+id+'_q'+i+'"]').forEach(function(r){r.checked=false;});
+    document.querySelectorAll('#'+id+'_mcq'+i+' .opt').forEach(function(o){o.classList.remove('correct','wrong');});
+    var ex=document.getElementById(id+'_exp'+i); if(ex)ex.classList.remove('show');
   }
-  var s1=document.getElementById('score'),s2=document.getElementById('score2');
-  if(s1)s1.textContent='';if(s2)s2.textContent='';
-  window.scrollTo({top:document.getElementById('test').offsetTop-10,behavior:'smooth'});
+  ['','2'].forEach(function(sx){var el=document.getElementById(id+'_score'+sx); if(el)el.textContent='';});
+  var sec=document.getElementById(id); if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
 }
 // search filter
 function runSearch(q){
@@ -512,8 +551,10 @@ def build():
     lectures = content_lectures.LECTURES
     mcq = content_mcq.MCQ
     classic = content_classic.CLASSIC
+    exams = sorted(content_exams.EXAMS, key=lambda e: e["year"])  # 2023-24, 2024-25
 
     total_qa = sum(len(l["qa"]) for l in lectures)
+    total_exam_q = sum(len(e["questions"]) for e in exams)
 
     # nav
     nav_links = ['<div class="group">Dersler</div>']
@@ -523,8 +564,12 @@ def build():
             f'<span>{_inline(l["title"].split("—")[0].strip())}</span></a>'
         )
     nav_links.append('<div class="group">Sınav Hazırlık</div>')
-    nav_links.append('<a href="#test"><span class="lc">✔</span><span>Çoktan Seçmeli Test (30)</span></a>')
+    nav_links.append(f'<a href="#test"><span class="lc">✔</span><span>Çoktan Seçmeli Test ({len(mcq)})</span></a>')
     nav_links.append('<a href="#klasik"><span class="lc">✎</span><span>Klasik Sorular (Kod)</span></a>')
+    nav_links.append('<div class="group">Çıkmış Sınavlar</div>')
+    for e in exams:
+        nav_links.append(f'<a href="#{e["id"]}"><span class="lc">★</span>'
+                         f'<span>Final {e["year"]} ({len(e["questions"])})</span></a>')
     nav_html = "\n".join(nav_links)
 
     # mobile select
@@ -533,14 +578,20 @@ def build():
         mob_opts.append(f'<option value="#{l["code"].lower()}">{l["code"]} — {_inline(l["title"].split("—")[0].strip())}</option>')
     mob_opts.append('<option value="#test">Çoktan Seçmeli Test</option>')
     mob_opts.append('<option value="#klasik">Klasik Sorular</option>')
+    for e in exams:
+        mob_opts.append(f'<option value="#{e["id"]}">Çıkmış Final {e["year"]}</option>')
     mob_html = "".join(mob_opts)
 
     # sections
     body_sections = []
     for i, l in enumerate(lectures):
         body_sections.append(render_lecture(l, i))
-    body_sections.append(render_mcq(mcq))
+    body_sections.append(render_quiz(mcq, "test", "TEST", "alt", "Çoktan Seçmeli Sınav",
+                                     f"{len(mcq)} soru · tüm konular · otomatik puanlama"))
     body_sections.append(render_classic(classic))
+    for e in exams:
+        body_sections.append(render_quiz(e["questions"], e["id"], "ÇIKMIŞ", "alt3",
+                                         f"Çıkmış Final · {e['year']}", e["meta"], e["intro"]))
     sections_html = "\n".join(body_sections)
 
     head = (
@@ -568,13 +619,14 @@ def build():
     <div class="kick">Final Sınavı · Çalışma Kılavuzu</div>
     <h2>Analysis of Algorithms — Tam Tekrar Seti</h2>
     <p>13 dersin konu anlatımı (kod parçalarıyla), her ders için 7 detaylı soru-cevap,
-    30 soruluk otomatik puanlı çoktan seçmeli sınav ve kod-boşluk-doldurmaca klasik sorular.
-    Hocanın slaytlarındaki C++ / sözde kod örnekleri yeniden derlendi. Başarılar! 🎯</p>
+    {len(mcq)} soruluk otomatik puanlı çoktan seçmeli sınav, kod-boşluk-doldurmaca klasik sorular
+    ve <strong>iki çıkmış final sınavı</strong> (2023-24 &amp; 2024-25) çözümleriyle. Başarılar! 🎯</p>
     <div class="stats">
       <div class="stat"><b>13</b><span>Ders / Konu</span></div>
       <div class="stat"><b>{total_qa}</b><span>Detaylı Soru-Cevap</span></div>
       <div class="stat"><b>{len(mcq)}</b><span>Çoktan Seçmeli</span></div>
       <div class="stat"><b>{len(classic)}</b><span>Klasik Kod Sorusu</span></div>
+      <div class="stat"><b>{total_exam_q}</b><span>Çıkmış Soru · 2 final</span></div>
     </div>
   </div>
 """

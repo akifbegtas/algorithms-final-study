@@ -2,54 +2,53 @@
 # 30 çoktan seçmeli soru. correct = doğru şıkkın index'i (0=A,1=B,2=C,3=D)
 
 MCQ = [
- # --- L1 ---
- {"topic":"L1 · C++","q":"`using namespace std;` satırının temel amacı nedir?",
-  "options":["Programı daha hızlı çalıştırmak","`std::` ön ekini yazmadan standart kütüphane isimlerini kullanmak ve isim çakışmalarını yönetmek","Bellekten dizi ayırmak","Dosya okuma/yazma açmak"],
-  "correct":1,"explain":"namespace isimleri gruplar; `using namespace std;` std içindeki cout, cin gibi isimleri çıplak kullanmamızı sağlar ve name collision'ı önler."},
- {"topic":"L1 · C++","q":"`int a[5];` dizisinde geçerli en büyük index hangisidir?",
-  "options":["5","4","6","Diziler 1'den başlar, yani 5"],
-  "correct":1,"explain":"C++ dizileri 0-tabanlıdır; 5 elemanlı dizide index'ler 0..4'tür, en büyük geçerli index 4'tür. a[5] sınır dışıdır."},
+ # --- L1 OMNeT++ ---
+ {"topic":"L1 · OMNeT++","q":"Discrete Event Simulation (DES) neyi modeller?",
+  "options":["Sürekli değişen fiziksel süreçleri","Değişikliklerin belirli zaman noktalarında (olaylarda) olduğu sistemleri","Sadece matematiksel denklemleri","Yalnızca donanım devrelerini"],
+  "correct":1,"explain":"DES, durumun yalnızca ayrık olaylarda (paket varışı, hasta gelişi vb.) değiştiği sistemleri modeller. Sürekli süreçler için continuous simulation gerekir."},
+ {"topic":"L1 · OMNeT++","q":"OMNeT++'ta modüller birbirleriyle nasıl haberleşir?",
+  "options":["Paylaşılan global değişkenlerle","Mesaj geçişi (message passing) ile","Dosya okuyarak","Doğrudan fonksiyon çağrısıyla"],
+  "correct":1,"explain":"OMNeT++ bir DES framework'üdür; sistem modüllerle modellenir ve modüller mesaj geçişi (message passing) yoluyla iletişir."},
+ {"topic":"L1 · OMNeT++","q":"Bir OMNeT++ projesinde modülün DAVRANIŞINI hangi dosya tanımlar?",
+  "options":[".ned dosyası",".ini dosyası",".cc / .h (C++) dosyaları",".msg dosyası"],
+  "correct":2,"explain":".ned yapıyı (ağ/kapı/bağlantı), .ini yapılandırmayı, .cc/.h ise modül davranışını (initialize, handleMessage) tanımlar."},
 
- # --- L2 ---
- {"topic":"L2 · Linked List","q":"Singly linked list'te bir node hangi iki parçadan oluşur?",
-  "options":["data ve index","value ve uzunluk","data ve sonraki node'a pointer (next)","key ve hash"],
-  "correct":2,"explain":"Her node bir veri (data) ve bir sonraki node'un adresini tutan pointer (next) içerir; son node'un next'i NULL'dur."},
- {"topic":"L2 · Linked List","q":"Aşağıdakilerden hangisi LIFO (Last In First Out) prensibiyle çalışır?",
-  "options":["Queue","Stack","Linked List","Array"],
-  "correct":1,"explain":"Stack LIFO'dur (son giren ilk çıkar). Queue ise FIFO'dur (ilk giren ilk çıkar)."},
+ # --- L2 OMNeT++ Part 3 ---
+ {"topic":"L2 · OMNeT++","q":"OMNeT++'ta `EV` makrosu ne işe yarar?",
+  "options":["Mesaj gönderir","Simülasyon log penceresine çıktı yazar (loglama)","Yeni modül oluşturur","Parametre okur"],
+  "correct":1,"explain":"EV, OMNeT++'ın loglama akışıdır; cout gibi `EV << ...` ile modülün ne yaptığını log penceresine yazdırır."},
+ {"topic":"L2 · OMNeT++","q":"TicToc'ta counter durum değişkeni sıfıra ulaşınca ne yapılır?",
+  "options":["counter tekrar 10 yapılır","Mesaj silinir (delete msg) ve akış durur","Yeni modül eklenir","Mesaj iki kez gönderilir"],
+  "correct":1,"explain":"counter initialize()'da 10'a ayarlanır, handleMessage()'da azaltılır; 0 olunca `delete msg` ile mesaj silinir, olay üretilmez ve simülasyon durur."},
 
- # --- L3 ---
- {"topic":"L3 · Recursion","q":"Özyinelemeli bir fonksiyonda 'base case' (temel durum) bulunmazsa ne olur?",
-  "options":["Fonksiyon daha hızlı çalışır","Sonsuz özyineleme olur ve stack taşar (stack overflow)","Derleyici hatası verir","Sonuç her zaman 0 döner"],
-  "correct":1,"explain":"Base case özyinelemeyi durduran koşuldur; olmazsa çağrılar sonsuza dek devam eder ve stack overflow oluşur."},
- {"topic":"L3 · GCD","q":"Euclid algoritmasına göre `gcd(20, 12)` kaçtır?",
-  "options":["2","6","4","12"],
-  "correct":2,"explain":"gcd(20,12)=gcd(12,20%12=8)=gcd(8,12%8=4)=gcd(4,8%4=0)=4. Sonuç 4."},
- {"topic":"L3 · Selection Sort","q":"Selection Sort'un her durumdaki (best/average/worst) zaman karmaşıklığı nedir?",
-  "options":["O(n)","O(n log n)","O(n²)","Best'te O(n), worst'te O(n²)"],
-  "correct":2,"explain":"Selection sort en küçüğü bulmak için her zaman tüm sırasız kısmı tarar; girdi sıralı olsa bile Θ(n²)'dir."},
+ # --- L3 OMNeT++ Part 4 ---
+ {"topic":"L3 · OMNeT++","q":"`check_and_cast<TicTocMsg*>(msg)` neden çıplak cast yerine tercih edilir?",
+  "options":["Daha hızlı olduğu için","Dönüşüm başarısızsa sessizce nullptr döndürdüğü için","Dönüşüm başarısızsa anlaşılır bir hata fırlattığı için","Belleği otomatik temizlediği için"],
+  "correct":2,"explain":"check_and_cast içeride dynamic_cast dener; tür yanlışsa sessizce nullptr vermek yerine açık bir hata fırlatır, böylece hatayı erken yakalarsın."},
+ {"topic":"L3 · OMNeT++","q":"`finish()` fonksiyonu ne zaman çağrılır?",
+  "options":["Her mesaj geldiğinde","Simülasyon başında","Simülasyon bittiğinde (istatistik kaydı için)","Modül oluşturulurken"],
+  "correct":2,"explain":"finish() simülasyon sona erince otomatik çağrılır; genelde recordScalar() ile özet istatistikleri kaydetmek için kullanılır."},
 
- # --- L4 ---
- {"topic":"L4 · Big O","q":"Big-Θ (theta) notasyonu hangi durumu tanımlar?",
-  "options":["Sadece üst sınır (worst case)","Sadece alt sınır (best case)","Hem üst hem alt sınır (sıkı/average)","Bellek kullanımı"],
-  "correct":2,"explain":"Θ hem O (üst) hem Ω (alt) sınırını birlikte sağlar; fonksiyon iki sabit katı arasında sıkışır → sıkı sınır."},
- {"topic":"L4 · Big O","q":"`f(n) = 2n⁷ − 6n⁵ + 10n² − 5` ifadesi neyin Big-O'sudur?",
-  "options":["O(n²)","O(n⁵)","O(n⁷)","O(2ⁿ)"],
-  "correct":2,"explain":"Her polinom, en yüksek dereceli teriminin Big-O'sudur. En yüksek derece n⁷ → O(n⁷)."},
- {"topic":"L4 · Big O","q":"Aşağıdaki büyüme fonksiyonlarından hangisi en HIZLI büyür?",
-  "options":["n log n","n²","2ⁿ","n³"],
-  "correct":2,"explain":"Sıralama: 1 < log n < n < n log n < n² < n³ < 2ⁿ. Üstel 2ⁿ en hızlı büyüyendir."},
-
- # --- L5 ---
- {"topic":"L5 · Sorting","q":"Hangi sıralama algoritması 'adaptive'tir (neredeyse sıralı veride O(n)'e yaklaşır)?",
-  "options":["Selection Sort","Insertion Sort","Her ikisi de değil","Selection ve Insertion eşit"],
-  "correct":1,"explain":"Insertion sort adaptive'tir; sıralı veride eleman başına tek karşılaştırma → O(n). Selection sort her durumda O(n²)'dir."},
- {"topic":"L5 · Sorting","q":"Bubble sort komşu elemanları karşılaştırırken ters sıradaysa ne yapar?",
-  "options":["Onları takas eder (swap)","Birini siler","Diziyi yeniden başlatır","Hiçbir şey yapmaz"],
-  "correct":0,"explain":"Bubble sort komşu çiftleri karşılaştırır ve ters sıradalarsa takas eder; takas olmayan geçiş listenin sıralı olduğunu gösterir."},
- {"topic":"L5 · Sorting","q":"Aşağıdakilerden hangisi 'stable' (kararlı) bir sıralama DEĞİLDİR?",
-  "options":["Insertion Sort","Bubble Sort","Selection Sort","Hepsi stable'dır"],
-  "correct":2,"explain":"Selection sort standart hâliyle stable değildir; uzak takaslar eşit anahtarların göreli sırasını bozabilir."},
+ # --- L4 Greedy ---
+ {"topic":"L4 · Greedy","q":"Greedy (açgözlü) method temelde nasıl çalışır?",
+  "options":["Tüm olası çözümleri dener","Her adımda yerel (locally) optimal seçimi yapar","Problemi bağımsız alt problemlere böler","Geriye dönük tüm seçimleri geri alır"],
+  "correct":1,"explain":"Greedy her adımda o an en iyi görünen (locally optimal) seçeneği alır ve global optimuma ulaşmayı umar; optimizasyon problemlerinde kullanılır."},
+ {"topic":"L4 · Greedy","q":"Bir problemin kısıtını (constraint) sağlayan çözümlere ne denir?",
+  "options":["Optimal solution","Feasible solution","Brute-force solution","Infeasible solution"],
+  "correct":1,"explain":"Kısıtı sağlayan her çözüm 'feasible' (uygun) çözümdür. Bunların arasından en iyisi ise 'optimal' çözümdür."},
+ {"topic":"L4 · Greedy","q":"Aşağıdakilerden hangisi greedy ile optimal çözülür?",
+  "options":["0/1 Knapsack","Fractional Knapsack","Tüm NP-complete problemler","Hiçbiri"],
+  "correct":1,"explain":"Fractional Knapsack, value/weight oranına göre greedy ile optimal çözülür. 0/1 Knapsack'te greedy başarısız olur; DP gerekir."},
+ # --- L5 Big O ---
+ {"topic":"L5 · Big O","q":"`O(n² + n)` ifadesi neye sadeleşir?",
+  "options":["O(n)","O(n²)","O(n³)","O(2n²)"],
+  "correct":1,"explain":"Big O'da yalnızca en yüksek dereceli terim tutulur: O(n²+n) → O(n²)."},
+ {"topic":"L5 · Big O","q":"Floyd-Warshall algoritmasının Big O zaman karmaşıklığı nedir?",
+  "options":["O(V + E)","O(V·E)","O(V³)","O(E log V)"],
+  "correct":2,"explain":"Floyd-Warshall tüm düğüm çiftleri için üçlü iç içe döngü kullanır → O(V³). (BFS/DFS O(V+E), Bellman-Ford O(VE).)"},
+ {"topic":"L5 · Big O","q":"Big O sadeleştirmesinde aşağıdakilerden hangisi DOĞRUDUR?",
+  "options":["Sabit katsayılar korunur","En düşük dereceli terim tutulur","Sabitler atılır ve en yüksek dereceli terim tutulur","Tüm terimler toplanır"],
+  "correct":2,"explain":"Big O'da sabit katsayılar atılır (O(2n)→O(n)) ve sadece en yüksek dereceli terim tutulur (O(n²+n)→O(n²))."},
 
  # --- L6 ---
  {"topic":"L6 · T(n)","q":"`for(i=0;i<n;i++) for(j=0;j<n;j++) x++;` kodunun T(n) karmaşıklığı nedir?",

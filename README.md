@@ -1,27 +1,27 @@
 # Analysis of Algorithms — Final Çalışma Kılavuzu
 
-C++ tabanlı **Data Structures & Analysis of Algorithms** dersi için interaktif final
-çalışma kılavuzu. Tek bir `index.html` dosyasında; konu anlatımları (kod parçalarıyla),
-detaylı soru-cevaplar, otomatik puanlı çoktan seçmeli sınav ve kod-boşluk-doldurmaca
-klasik sorular bulunur.
+İnteraktif final çalışma kılavuzu (tek `index.html`): konu anlatımları (kod parçalarıyla),
+detaylı soru-cevaplar, otomatik puanlı çoktan seçmeli sınav, kod-boşluk-doldurmaca klasik
+sorular ve **iki çıkmış final sınavı** (2023-24 & 2024-25) çözümleriyle.
 
 ## 🚀 Nasıl kullanılır
-`index.html` dosyasına çift tıkla — tarayıcıda açılır. Kurulum/derleme gerekmez.
+`index.html` dosyasına çift tıkla — tarayıcıda açılır. Kurulum gerekmez.
 
 ## 📚 İçindekiler
-- **13 ders** (L1–L13) konu anlatımı + gömülü C++ / sözde kod
-- **91 detaylı soru-cevap** (her ders için 7, tıklayınca açılan cevaplar)
-- **30 soruluk çoktan seçmeli sınav** — otomatik puanlama + her soruya açıklama
-- **14 klasik kod sorusu** — boşluk doldurmaca, çözümü gizli
+- **13 ders** (L1–L13) konu anlatımı + gömülü C++ / OMNeT++ / sözde kod
+- **91 detaylı soru-cevap** (her ders 7)
+- **30 soruluk çoktan seçmeli sınav** — otomatik puanlama
+- **14 klasik kod sorusu** — boşluk doldurmaca
+- **2 çıkmış final sınavı** (2023-24 & 2024-25) — interaktif, cevap anahtarlı
 
 ### Konular
 | Ders | Konu |
 |------|------|
-| L1 | C++'a giriş (namespace, switch, dizi, sınıf, constructor) |
-| L2 | Veri yapıları & Bağlı listeler (Linked List, template) |
-| L3 | Iteration, Induction, Recursion + Selection Sort |
-| L4 | Big O, Big Ω, Big Θ — karmaşıklık analizi |
-| L5 | Bubble, Insertion, Selection Sort |
+| L1 | OMNeT++ & TicToc'a giriş (DES, modüller, mesajlaşma) |
+| L2 | TicToc iyileştirmeleri (EV log, counter, self-message) |
+| L3 | TicToc gerçek ağ (channel, .msg, check_and_cast, finish) |
+| L4 | Greedy Method (feasible/optimal, optimizasyon, graf temelleri) |
+| L5 | Big O notasyonu (hesaplama, sadeleştirme, O/Ω/Θ) |
 | L6 | Algoritma analizi — T(n) ve toplam denklemleri |
 | L7 | Pandas, DataFrame, Matplotlib |
 | L8 | Dijkstra — en kısa yol |
@@ -31,19 +31,12 @@ klasik sorular bulunur.
 | L12 | Knapsack (sırt çantası) problemi |
 | L13 | Topolojik sıralama — Kahn algoritması |
 
-## 🛠️ Yeniden üretme (opsiyonel)
-İçerik `src/` altındaki Python dosyalarından üretilir:
-
+## 🛠️ Yeniden üretme
 ```bash
 cd src
 python3 build.py        # -> index.html üretir
 ```
 
-- `content_lectures.py` — konu anlatımı + soru-cevaplar
-- `content_mcq.py` — çoktan seçmeli sorular
-- `content_classic.py` — klasik kod soruları
-- `build.py` — HTML derleyici (markdown render + quiz motoru)
-
 ## ⚠️ Not
-Kod örnekleri standart C++ / sözde kod olarak yeniden yazılmıştır. Sınavda hocanın gösterimi
-farklıysa onu esas alın. Kişisel çalışma amaçlıdır.
+Çıkmış sınav soruları taranmış PDF'lerden transkribe edilmiştir; cevap anahtarı hazırlayan
+tarafından oluşturulmuştur. Şüpheli durumda hocanın resmi anahtarını esas alın.
