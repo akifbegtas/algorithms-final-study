@@ -486,10 +486,7 @@ function getQuizData(id){
   return (window.QUIZZES&&window.QUIZZES[id])||[];
 }
 function correctAnswerText(id,i,ci){
-  var opt=document.querySelector('#'+id+'_mcq'+i+' .opt[data-o="'+ci+'"]');
-  if(!opt) return String.fromCharCode(65+ci);
-  var txt=opt.querySelector('.opt-txt');
-  return String.fromCharCode(65+ci)+') '+(txt?txt.textContent.trim():'');
+  return String.fromCharCode(65+ci);
 }
 function setQuestionFeedback(id,i,kind,text){
   var fb=document.getElementById(id+'_fb'+i);
