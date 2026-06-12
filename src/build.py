@@ -203,6 +203,10 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro="", insta
         topic_html = f'<span class="mcq-topic">{_inline(topic)}</span>' if topic else ''
         instant_attr = f' onchange="answerQuizQuestion(\'{qid}\',{i})"' if instant_feedback else ''
         feedback_html = f'<div class="question-feedback" id="{qid}_fb{i}"></div>' if instant_feedback else ''
+        reveal_html = (
+            f'<div class="reveal-row"><button type="button" class="btn reveal-answer" '
+            f'id="{qid}_reveal{i}" onclick="revealQuizAnswer(\'{qid}\',{i})">Cevabı Göster</button></div>'
+        ) if instant_feedback else ''
         opts = "".join(
             f'<label class="opt" data-o="{k}">'
             f'<input type="radio" name="{qid}_q{i}" value="{k}"{instant_attr}>'
@@ -215,6 +219,7 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro="", insta
             f'<span class="mcq-n">{i+1}</span>{topic_html}'
             f'<div class="mcq-text">{_inline(q["q"])}</div></div>'
             f'<div class="opts">{opts}</div>'
+            f'{reveal_html}'
             f'{feedback_html}'
             f'<div class="explain" id="{qid}_exp{i}"><strong>Cevap &amp; Açıklama:</strong> {_inline(exp)}</div>'
             f'</div>'
@@ -431,6 +436,9 @@ details.qa[open] summary::after{content:"–"}
 .opt-txt{font-size:14px}
 .opt.correct{border-color:var(--good);background:rgba(55,211,153,.12)} .opt.correct .opt-key{background:var(--good);color:#042}
 .opt.wrong{border-color:var(--bad);background:rgba(255,107,129,.12)} .opt.wrong .opt-key{background:var(--bad);color:#400}
+.reveal-row{display:flex;justify-content:flex-end;margin-top:10px}
+.btn.reveal-answer{padding:7px 12px;border-radius:9px;font-size:12.5px;color:var(--acc);background:var(--bg)}
+.btn.reveal-answer:hover{border-color:var(--acc);background:var(--chip)}
 .question-feedback{display:none;margin-top:11px;padding:10px 13px;border-radius:10px;font-size:13.5px;
   font-weight:700;border:1px solid var(--line);background:var(--panel)}
 .question-feedback.show{display:block}
@@ -524,6 +532,18 @@ function markQuizQuestion(id,i,revealUnanswered){
   }
   return {answered:false,correct:false};
 }
+function revealQuizAnswer(id,i){
+  var data=getQuizData(id);
+  if(!data[i]) return;
+  var ci=data[i].correct;
+  document.querySelectorAll('#'+id+'_mcq'+i+' .opt').forEach(function(o){
+    o.classList.remove('correct','wrong');
+    if(parseInt(o.getAttribute('data-o'))===ci) o.classList.add('correct');
+  });
+  setQuestionFeedback(id,i,'warn','Doğru cevap: '+correctAnswerText(id,i,ci));
+  var ex=document.getElementById(id+'_exp'+i); if(ex) ex.classList.add('show');
+  var btn=document.getElementById(id+'_reveal'+i); if(btn) btn.textContent='Cevap Gösterildi';
+}
 function setQuizScore(id,correct,answered,total,prefix){
   var pct=total?Math.round(correct/total*100):0;
   var msg=(prefix||'Skor')+': '+correct+' / '+total+'  ('+pct+'%)  ·  '+answered+' işaretlendi';
@@ -566,6 +586,7 @@ function resetQuiz(id){
     document.querySelectorAll('#'+id+'_mcq'+i+' .opt').forEach(function(o){o.classList.remove('correct','wrong');});
     var fb=document.getElementById(id+'_fb'+i);
     if(fb){fb.className='question-feedback'; fb.textContent='';}
+    var btn=document.getElementById(id+'_reveal'+i); if(btn) btn.textContent='Cevabı Göster';
     var ex=document.getElementById(id+'_exp'+i); if(ex)ex.classList.remove('show');
   }
   ['','2'].forEach(function(sx){var el=document.getElementById(id+'_score'+sx); if(el)el.textContent='';});
