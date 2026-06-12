@@ -193,7 +193,7 @@ def render_lecture(lec, idx):
 """
 
 
-def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro=""):
+def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro="", instant_feedback=False):
     data = json.dumps([{"correct": q["correct"]} for q in questions], ensure_ascii=False)
     cards = []
     for i, q in enumerate(questions):
@@ -201,9 +201,11 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro=""):
         exp = q.get("explain") or q.get("exp", "")
         topic = q.get("topic", "")
         topic_html = f'<span class="mcq-topic">{_inline(topic)}</span>' if topic else ''
+        instant_attr = f' onchange="answerQuizQuestion(\'{qid}\',{i})"' if instant_feedback else ''
+        feedback_html = f'<div class="question-feedback" id="{qid}_fb{i}"></div>' if instant_feedback else ''
         opts = "".join(
             f'<label class="opt" data-o="{k}">'
-            f'<input type="radio" name="{qid}_q{i}" value="{k}">'
+            f'<input type="radio" name="{qid}_q{i}" value="{k}"{instant_attr}>'
             f'<span class="opt-key">{chr(65+k)}</span>'
             f'<span class="opt-txt">{_inline(o)}</span></label>'
             for k, o in enumerate(opts_list)
@@ -213,14 +215,16 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro=""):
             f'<span class="mcq-n">{i+1}</span>{topic_html}'
             f'<div class="mcq-text">{_inline(q["q"])}</div></div>'
             f'<div class="opts">{opts}</div>'
+            f'{feedback_html}'
             f'<div class="explain" id="{qid}_exp{i}"><strong>Cevap &amp; Açıklama:</strong> {_inline(exp)}</div>'
             f'</div>'
         )
     cards_html = "\n".join(cards)
     intro_html = (f'<div class="callout note"><span class="callout-label">Bilgi</span>'
                   f'<p>{_inline(intro)}</p></div>') if intro else ''
+    section_cls = "quiz-section instant-feedback" if instant_feedback else "quiz-section"
     return f"""
-<section id="{qid}" class="quiz-section" data-section="quiz">
+<section id="{qid}" class="{section_cls}" data-section="quiz">
   <div class="lec-head">
     <span class="lec-chip {chip_cls}">{chip}</span>
     <div><h2>{_inline(title)}</h2>
@@ -427,6 +431,12 @@ details.qa[open] summary::after{content:"–"}
 .opt-txt{font-size:14px}
 .opt.correct{border-color:var(--good);background:rgba(55,211,153,.12)} .opt.correct .opt-key{background:var(--good);color:#042}
 .opt.wrong{border-color:var(--bad);background:rgba(255,107,129,.12)} .opt.wrong .opt-key{background:var(--bad);color:#400}
+.question-feedback{display:none;margin-top:11px;padding:10px 13px;border-radius:10px;font-size:13.5px;
+  font-weight:700;border:1px solid var(--line);background:var(--panel)}
+.question-feedback.show{display:block}
+.question-feedback.good{border-color:var(--good);color:var(--good);background:rgba(55,211,153,.1)}
+.question-feedback.bad{border-color:var(--bad);color:var(--bad);background:rgba(255,107,129,.1)}
+.question-feedback.warn{border-color:var(--warn);color:var(--warn);background:rgba(255,207,107,.1)}
 .explain{display:none;margin-top:11px;padding:11px 13px;border-radius:10px;background:var(--panel2);
   border:1px solid var(--line);font-size:13.5px;color:var(--muted)}
 .explain.show{display:block}
@@ -472,33 +482,93 @@ function copyCode(btn){
     });
   }catch(e){}
 }
-function gradeQuiz(id){
-  var data=(window.QUIZZES&&window.QUIZZES[id])||[]; var correct=0, answered=0;
+function getQuizData(id){
+  return (window.QUIZZES&&window.QUIZZES[id])||[];
+}
+function correctAnswerText(id,i,ci){
+  var opt=document.querySelector('#'+id+'_mcq'+i+' .opt[data-o="'+ci+'"]');
+  if(!opt) return String.fromCharCode(65+ci);
+  var txt=opt.querySelector('.opt-txt');
+  return String.fromCharCode(65+ci)+') '+(txt?txt.textContent.trim():'');
+}
+function setQuestionFeedback(id,i,kind,text){
+  var fb=document.getElementById(id+'_fb'+i);
+  if(!fb) return;
+  fb.className='question-feedback show '+kind;
+  fb.textContent=text;
+}
+function markQuizQuestion(id,i,revealUnanswered){
+  var data=getQuizData(id);
+  if(!data[i]) return {answered:false,correct:false};
+  var picked=document.querySelector('input[name="'+id+'_q'+i+'"]:checked');
+  var opts=document.querySelectorAll('#'+id+'_mcq'+i+' .opt');
+  opts.forEach(function(o){o.classList.remove('correct','wrong');});
+  var ci=data[i].correct;
+  opts.forEach(function(o){
+    if(parseInt(o.getAttribute('data-o'))===ci) o.classList.add('correct');
+  });
+  var ex=document.getElementById(id+'_exp'+i);
+  if(picked){
+    var pi=parseInt(picked.value);
+    var ok=pi===ci;
+    if(!ok){
+      var w=document.querySelector('#'+id+'_mcq'+i+' .opt[data-o="'+pi+'"]');
+      if(w) w.classList.add('wrong');
+    }
+    setQuestionFeedback(id,i,ok?'good':'bad',
+      ok ? 'Doğru. Cevap: '+correctAnswerText(id,i,ci)
+         : 'Yanlış. Doğru cevap: '+correctAnswerText(id,i,ci));
+    if(ex) ex.classList.add('show');
+    return {answered:true,correct:ok};
+  }
+  if(revealUnanswered){
+    setQuestionFeedback(id,i,'warn','Cevaplanmadı. Doğru cevap: '+correctAnswerText(id,i,ci));
+    if(ex) ex.classList.add('show');
+  }
+  return {answered:false,correct:false};
+}
+function setQuizScore(id,correct,answered,total,prefix){
+  var pct=total?Math.round(correct/total*100):0;
+  var msg=(prefix||'Skor')+': '+correct+' / '+total+'  ('+pct+'%)  ·  '+answered+' işaretlendi';
+  ['','2'].forEach(function(sx){
+    var el=document.getElementById(id+'_score'+sx);
+    if(el){el.textContent=msg; el.style.color=pct>=70?'var(--good)':(pct>=50?'var(--warn)':'var(--bad)');}
+  });
+}
+function updateInstantScore(id){
+  var sec=document.getElementById(id);
+  if(!sec||!sec.classList.contains('instant-feedback')) return;
+  var data=getQuizData(id), correct=0, answered=0;
   for(var i=0;i<data.length;i++){
     var picked=document.querySelector('input[name="'+id+'_q'+i+'"]:checked');
-    var opts=document.querySelectorAll('#'+id+'_mcq'+i+' .opt');
-    opts.forEach(function(o){o.classList.remove('correct','wrong');});
-    var ci=data[i].correct;
-    opts.forEach(function(o){ if(parseInt(o.getAttribute('data-o'))===ci) o.classList.add('correct'); });
     if(picked){
       answered++;
-      var pi=parseInt(picked.value);
-      if(pi===ci) correct++;
-      else { var w=document.querySelector('#'+id+'_mcq'+i+' .opt[data-o="'+pi+'"]'); if(w)w.classList.add('wrong'); }
+      if(parseInt(picked.value)===data[i].correct) correct++;
     }
-    var ex=document.getElementById(id+'_exp'+i); if(ex)ex.classList.add('show');
   }
-  var pct=data.length?Math.round(correct/data.length*100):0;
-  var msg='Skor: '+correct+' / '+data.length+'  ('+pct+'%)  ·  '+answered+' işaretlendi';
-  ['','2'].forEach(function(sx){var el=document.getElementById(id+'_score'+sx);
-    if(el){el.textContent=msg; el.style.color=pct>=70?'var(--good)':(pct>=50?'var(--warn)':'var(--bad)');}});
+  setQuizScore(id,correct,answered,data.length,'Anlık');
+}
+function answerQuizQuestion(id,i){
+  markQuizQuestion(id,i,false);
+  updateInstantScore(id);
+}
+function gradeQuiz(id){
+  var data=getQuizData(id); var correct=0, answered=0;
+  for(var i=0;i<data.length;i++){
+    var result=markQuizQuestion(id,i,true);
+    if(result.answered) answered++;
+    if(result.correct) correct++;
+  }
+  setQuizScore(id,correct,answered,data.length,'Skor');
   var first=document.getElementById(id+'_mcq0'); if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function resetQuiz(id){
-  var data=(window.QUIZZES&&window.QUIZZES[id])||[];
+  var data=getQuizData(id);
   for(var i=0;i<data.length;i++){
     document.querySelectorAll('input[name="'+id+'_q'+i+'"]').forEach(function(r){r.checked=false;});
     document.querySelectorAll('#'+id+'_mcq'+i+' .opt').forEach(function(o){o.classList.remove('correct','wrong');});
+    var fb=document.getElementById(id+'_fb'+i);
+    if(fb){fb.className='question-feedback'; fb.textContent='';}
     var ex=document.getElementById(id+'_exp'+i); if(ex)ex.classList.remove('show');
   }
   ['','2'].forEach(function(sx){var el=document.getElementById(id+'_score'+sx); if(el)el.textContent='';});
@@ -591,7 +661,8 @@ def build():
     body_sections.append(render_classic(classic))
     for e in exams:
         body_sections.append(render_quiz(e["questions"], e["id"], "ÇIKMIŞ", "alt3",
-                                         f"Çıkmış Final · {e['year']}", e["meta"], e["intro"]))
+                                         f"Çıkmış Final · {e['year']}", e["meta"], e["intro"],
+                                         instant_feedback=True))
     sections_html = "\n".join(body_sections)
 
     head = (
@@ -658,4 +729,3 @@ if __name__ == "__main__":
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(out)
     print("WROTE index.html  bytes=", len(out))
-

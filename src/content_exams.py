@@ -11,7 +11,7 @@ EXAMS.append({
 "id": "sinav2425",
 "year": "2024–2025",
 "meta": "CEN302 · Spring 2024–2025 · 21 Mayıs 2025 · Süre 1 saat · Dr. Mohammed Al-Hubaishi",
-"intro": "Aşağıdaki sorular 2024–2025 final sınavından birebir alınmıştır (grafik/şekle dayalı birkaç soru sonda not edilmiştir). Şıkkı seç, sonunda 'Bitir & Puanla' de.",
+"intro": "Aşağıdaki sorular 2024–2025 final sınavından birebir alınmıştır (grafik/şekle dayalı birkaç soru sonda not edilmiştir). Şıkkı seçince doğru/yanlış durumu ve açıklama anında görünür; sonunda toplam skor için 'Bitir & Puanla'ya basabilirsin.",
 "questions": [
  {"q":"Which statement about the memory requirements of BFS and DFS is correct?",
   "opts":["BFS typically requires less memory than DFS","BFS typically requires more memory than DFS","BFS and DFS have identical memory requirements","Memory depends only on graph size"],
@@ -161,7 +161,7 @@ EXAMS.append({
 "id": "sinav2324",
 "year": "2023–2024",
 "meta": "CEN302 · Spring 2023–2024 · 24 Haziran 2024 · Süre 1 saat · Dr. Mohammed Al-Hubaishi",
-"intro": "2023–2024 final sınavının kavramsal soruları (grafik/şekle dayalı yol-bulma soruları ayrıca özetlendi). Şıkkı seç, sonunda 'Bitir & Puanla' de.",
+"intro": "2023–2024 final sınavının kavramsal soruları (grafik/şekle dayalı yol-bulma soruları ayrıca özetlendi). Şıkkı seçince doğru/yanlış durumu ve açıklama anında görünür; sonunda toplam skor için 'Bitir & Puanla'ya basabilirsin.",
 "questions": [
  {"q":"Which best describes the approach used in Kruskal's algorithm?",
   "opts":["Start empty and repeatedly add the most expensive edge without a cycle","Start with each vertex as its own tree, merge cheapest trees without a cycle","Start with all edges, remove the most expensive edge that doesn't disconnect","Start with edges sorted by weight and add the next cheapest edge that doesn't create a cycle"],
@@ -305,4 +305,3 @@ EXAMS.append({
 })
 
 print("EXAMS loaded:", [(e["year"], len(e["questions"])) for e in EXAMS])
-
