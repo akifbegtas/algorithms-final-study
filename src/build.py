@@ -200,6 +200,7 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro="", insta
         opts_list = q.get("options") or q.get("opts")
         exp = q.get("explain") or q.get("exp", "")
         topic = q.get("topic", "")
+        number = q.get("num", i + 1)
         topic_html = f'<span class="mcq-topic">{_inline(topic)}</span>' if topic else ''
         instant_attr = f' onchange="answerQuizQuestion(\'{qid}\',{i})"' if instant_feedback else ''
         feedback_html = f'<div class="question-feedback" id="{qid}_fb{i}"></div>' if instant_feedback else ''
@@ -216,7 +217,7 @@ def render_quiz(questions, qid, chip, chip_cls, title, subtitle, intro="", insta
         )
         cards.append(
             f'<div class="mcq" id="{qid}_mcq{i}"><div class="mcq-q">'
-            f'<span class="mcq-n">{i+1}</span>{topic_html}'
+            f'<span class="mcq-n">{_inline(str(number))}</span>{topic_html}'
             f'<div class="mcq-text">{_inline(q["q"])}</div></div>'
             f'<div class="opts">{opts}</div>'
             f'{reveal_html}'
